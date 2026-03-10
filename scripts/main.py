@@ -327,7 +327,14 @@ def bienvenida():
         <!-- HISTORIAL -->
         <div class="card full-width">
             <h2>📋 Historial de Análisis</h2>
-            <button onclick="verHistorial()" style="margin-bottom:16px">ACTUALIZAR HISTORIAL</button>
+            <div style="display:flex;gap:12px;margin-bottom:16px">
+                <button onclick="verHistorial()" style="margin:0">ACTUALIZAR HISTORIAL</button>
+                <div style="display:flex;gap:8px;flex:1">
+                    <input type="number" id="buscar-id" placeholder="Buscar por ID..." style="margin:0;width:180px;min-width:120px" min="1">
+                    <button onclick="buscarPorId()" style="margin:0;width:auto;padding:0 20px">BUSCAR ID</button>
+                </div>
+            </div>
+            <div id="historial-id-resultado"></div>
             <div id="historial-lista"></div>
         </div>
 
@@ -336,6 +343,44 @@ def bienvenida():
 
 <script>
 const API = "http://127.0.0.1:8000";
+async function buscarPorId() {
+    const id = document.getElementById("buscar-id").value;
+    const div = document.getElementById("historial-id-resultado");
+    if (!id) return;
+    try {
+        const res = await fetch(`${API}/historial/${id}`);
+        if (!res.ok) {
+            div.innerHTML = `<div class="error" style="background:#0d0a0a;border:1px solid #ff4560;border-radius:10px;padding:16px;margin-bottom:12px">
+                <b>❌ Error 404 — Not Found</b><br>
+                <span style="color:#6a8aaa;font-size:12px">No existe ningún análisis con el ID ${id}.</span>
+            </div>`;
+            return;
+        }
+        const d = await res.json();
+        const perfilColor = d.perfil_consistencia === "Consistente" ? "badge-verde" :
+                            d.perfil_consistencia === "De rachas" ? "badge-amarillo" : "badge-rojo";
+        const recColor = d.recomendacion === "Fichar" ? "badge-verde" :
+                         d.recomendacion === "Observar" ? "badge-amarillo" : "badge-rojo";
+        div.innerHTML = `
+        <div style="background:#0d1a10;border:1px solid #00ff87;border-radius:10px;padding:16px;margin-bottom:12px">
+            <div style="font-size:12px;color:#00ff87;font-weight:600;margin-bottom:8px">✅ Análisis encontrado — ID #${d.id}</div>
+            <div style="font-weight:600;color:#fff">${d.nombre} <span class="pos-badge">${d.posicion}</span></div>
+            <div style="font-size:12px;color:#6a8aaa;margin-top:4px">${d.equipo} · ${d.liga} · ${d.edad} años</div>
+            <div style="margin-top:8px">
+                <span class="badge ${perfilColor}">${d.perfil_consistencia}</span>
+                <span class="badge ${recColor}">${d.recomendacion}</span>
+            </div>
+            <div class="stat-grid" style="margin-top:12px">
+                <div class="stat"><div class="valor">${d.promedio}</div><div class="etiqueta">Promedio</div></div>
+                <div class="stat"><div class="valor">${d.desvi_std}</div><div class="etiqueta">Desv. Std</div></div>
+                <div class="stat"><div class="valor">${d.maximo}</div><div class="etiqueta">Máximo</div></div>
+                <div class="stat"><div class="valor">${d.minimo}</div><div class="etiqueta">Mínimo</div></div>
+                <div class="stat"><div class="valor">${d.varianza}</div><div class="etiqueta">Varianza</div></div>
+                <div class="stat"><div class="valor">${d.rango}</div><div class="etiqueta">Rango</div></div>
+            </div>
+        </div>`;
+    } catch(e) { div.innerHTML = '<p class="error">Error conectando con la API.</p>'; }
+}
 
 // BUSCAR JUGADOR
 async function buscarJugador() {
@@ -424,6 +469,12 @@ async function analizarJugador() {
         });
         if (!res.ok) {
     const err = await res.json();
+    if (res.status ===404){
+        div.innerHTML= `<div class="error" style="background:#0d0a0a;border:1px solid #ff4560;border-radius:10px;padding:16px">
+            <b>❌ Error 404 — Not Found</b><br>
+            <span style="color:#6a8aaa;font-size:12px">${err.detail}</span>
+        </div>`;
+        return;}
     let mensajeAmigable = `<b style="font-size:15px">❌ Error 422 — Unprocessable Entity</b><br><span style="color:#6a8aaa;font-size:12px">Pydantic rechazó los datos. Revisa los siguientes campos:</span>`;
     if (Array.isArray(err.detail)) {
     err.detail.forEach(e => {
@@ -539,6 +590,10 @@ verHistorial();
 @app.post("/Analizar", response_model=resultados, tags=["⚽ Análisis"])
 def analizar_jugador(jugador: jugador_input):
     global contador_id
+    coincidencia=df_jugadores[df_jugadores["Player"].str.contains(jugador.Player, case=False, na=False)]
+    if coincidencia.empty:
+        raise HTTPException(status_code=404, detail=f"'{jugador.Player}' no se encontró en el dataset. Solo se pueden analizar jugadores de las 5 grandes ligas europeas")
+
     contador_id += 1
     resultado = calcular_est(jugador, id_registro=contador_id)
     historial[contador_id] = resultado
