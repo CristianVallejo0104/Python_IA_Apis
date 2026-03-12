@@ -3,6 +3,26 @@ from models import jugador_input, resultados
 import time                  
 from functools import wraps
 
+
+
+def validar_metricas(func):
+    @wraps(func)
+    def wrapper(jugador, *args, **kwargs):
+        metricas_invalidas = [m for m in jugador.metricas_por_partido if m < 0]
+        if metricas_invalidas:
+            raise ValueError(f"Las métricas deben ser positivas. Valores inválidos: {metricas_invalidas}")
+        return func(jugador, *args, **kwargs)
+    return wrapper
+
+def verificar_posicion(func):
+    @wraps(func)
+    def wrapper(jugador, *args, **kwargs):
+        posiciones_validas = ["FW", "MF", "DF", "GK"]
+        if jugador.Pos not in posiciones_validas:
+            raise ValueError(f"Posición '{jugador.Pos}' no válida. Use: {posiciones_validas}")
+        return func(jugador, *args, **kwargs)
+    return wrapper
+
 def medir_tiempo(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -13,7 +33,9 @@ def medir_tiempo(func):
         return resultado
     return wrapper
 
-@medir_tiempo                  
+@verificar_posicion
+@validar_metricas
+@medir_tiempo              
 def calcular_est(jugador: jugador_input, id_registro: int) -> resultados:    
     datos= np.array(jugador.metricas_por_partido)
     prom= round(float(np.mean(datos)),4)
@@ -59,6 +81,7 @@ def calcular_est(jugador: jugador_input, id_registro: int) -> resultados:
         minutos_analizados = jugador.Min,     
         n_metricas         = len(jugador.metricas_por_partido)
     )
+
 
 
 if __name__ == "__main__":

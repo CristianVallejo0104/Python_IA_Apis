@@ -37,6 +37,14 @@ def analizar_jugadores(df):
     print(f"Jugadores con menos de 450: {len(pocos_min)}")
     print(f"Jugadores que si usaremos: {len(df)-len(pocos_min)}")
 
+def ejecutar_eda():
+    print("\n📊 === EDA DEL DATASET ===")
+    df = cargar_datos()
+    est_desc(df)
+    analizar_nulos(df)
+    analizar_jugadores(df)
+    print("✅ EDA completado\n")
+
 if __name__=="__main__":
     df=cargar_datos()
     est_desc(df)

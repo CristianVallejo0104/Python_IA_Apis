@@ -5,9 +5,21 @@ from models import jugador_input, resultados
 from procesamiento import calcular_est
 import pandas as pd
 from pathlib import Path 
+from eda import ejecutar_eda
+from limpieza import ejecutar_limpieza
+
+print("=" * 50)
+print("🔍 Ejecutando EDA del dataset...")
+ejecutar_eda()
+print("🧹 Ejecutando limpieza del dataset...")
+ejecutar_limpieza()
+print("✅ Dataset listo — API iniciando...")
+print("=" * 50)
 
 CSV_PATH = Path(r"C:\Users\cristian\parcial_api_futbol\datos\jugadores_limpios.csv")
 df_jugadores = pd.read_csv(CSV_PATH)
+
+
 
 app = FastAPI(
     title="Rendimiento jugador",

@@ -45,6 +45,15 @@ def guardar_datos(df):
     df.to_csv(CSV_SALIDA, index=False)
     print(f"Archivo guardado con {len(df)} jugadores")
 
+def ejecutar_limpieza():
+    print("\n🧹 === LIMPIEZA DEL DATASET ===")
+    df = cargar_datos()
+    df = filtrar_minutos(df)
+    df = limpiar_nulos(df)
+    df = simplificar_pos(df)
+    guardar_datos(df)
+    print("✅ Limpieza completada\n")
+
 if __name__=="__main__":
     df=cargar_datos()
     df=filtrar_minutos(df)
